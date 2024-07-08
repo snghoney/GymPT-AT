@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>운동 순위</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        :root {
+            --background-color: black;
+            /* 전체 배경 색 */
+            --ranking-box-background: #303030;
+            /* 랭킹 박스 배경 색 */
+            --ranking-box-height: 60vh;
+            /* 랭킹 박스 높이 */
+            --ranking-box-width: 40vh;
+            /* 랭킹 박스 너비 */
+            --rank-item-background-odd: black;
+            /* 홀수 순위 아이템 배경 색 */
+            --rank-item-background-even: black;
+            /* 짝수 순위 아이템 배경 색 */
+            --rank-item-height: 45px;
+            /* 순위 아이템 높이 */
+            --rank-item-font-size: 1.2em;
+            /* 순위 아이템 폰트 크기 */
+            --text-color: white;
+            /* 모든 글씨 색 */
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: var(--background-color);
+            margin: 0;
+            color: var(--text-color);
+            /* 모든 글씨 색 적용 */
+        }
+
+        .ranking-box {
+            background: var(--ranking-box-background);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: var(--ranking-box-width);
+            max-width: 600px;
+            height: var(--ranking-box-height);
+            color: var(--text-color);
+            /* 모든 글씨 색 적용 */
+        }
+
+        .ranking-title {
+            font-size: 2em;
+            /* 글씨 크기를 키움 */
+            font-weight: bold;
+            /* Bold 스타일 추가 */
+            margin-bottom: 20px;
+            color: var(--text-color);
+            /* 모든 글씨 색 적용 */
+        }
+
+        .rank-item {
+            background: var(--rank-item-background-even);
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: var(--rank-item-font-size);
+            height: var(--rank-item-height);
+            align-items: center;
+            color: var(--text-color);
+            /* 모든 글씨 색 적용 */
+        }
+
+        .rank-item:nth-child(odd) {
+            background: var(--rank-item-background-odd);
+        }
+
+        .rank-number {
+            margin-right: 10px;
+            /* 번호 앞에 공간 추가 */
+        }
+
+        .rank-number.gold {
+            color: gold;
+        }
+
+        .rank-number.silver {
+            color: silver;
+        }
+
+        .rank-number.bronze {
+            color: #cd7f32;
+        }
+
+        .rank-name.gold {
+            color: gold;
+        }
+
+        .rank-name.silver {
+            color: silver;
+        }
+
+        .rank-name.bronze {
+            color: #cd7f32;
+        }
+
+        .rank-name {
+            flex-grow: 1;
+            text-align: left;
+            margin-left: 10px;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .sidebar {
+            width: 80px;
+            background-color: #222;
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ranking-box">
+        <div class="ranking-title">오늘의 균형왕 랭킹</div>
+        {% for index, user in enumerate(user_data[:7]) %}
+        <div class="rank-item">
+            <span
+                class="rank-number {% if index == 0 %}gold{% elif index == 1 %}silver{% elif index == 2 %}bronze{% endif %} bold">#{{
+                index + 1 }}</span>
+            <span
+                class="rank-name {% if index == 0 %}gold{% elif index == 1 %}silver{% elif index == 2 %}bronze{% endif %} bold">{{
+                user.name }}</span>
+            <span
+                class="rank-number {% if index == 0 %}gold{% elif index == 1 %}silver{% elif index == 2 %}bronze{% endif %} bold">{{
+                "%.1f"|format(user.score / 4) }}점</span>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="sidebar">
+        <div>
+            <a href="{{ url_for('rank') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/rank_s.png') }}" alt="순위 아이콘"
+                        style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+        <div>
+            <a href="{{ url_for('anal') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/anal.png') }}" alt="분석 아이콘"
+                        style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+        <div>
+            <a href="{{ url_for('select') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/exer.png') }}" alt="운동 아이콘"
+                        style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>

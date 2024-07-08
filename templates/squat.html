@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ exercise }} 운동 페이지</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #333;
+        }
+
+        .title {
+            font-size: 60px;
+            color: white;
+            margin-bottom: 60px;
+            text-align: center;
+        }
+
+        #container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: calc(100% - 80px);
+            margin-right: 80px;
+        }
+
+        .set {
+            font-size: 24px;
+            color: white;
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        video {
+            width: 49%;
+            border: 2px solid black;
+        }
+
+        canvas {
+            width: 43%;
+            border: 2px solid black;
+        }
+        #console {
+            width: 80%;
+            height: 100px;
+            border: 1px solid #000;
+            margin-top: 20px;
+            overflow-y: scroll;
+            background: #333;
+            color: #ffffff;
+            font-size: 16px;
+            padding: 5px;
+        }
+
+        .sidebar {
+            width: 80px;
+            background-color: #222;
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0%;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: calc(100% - 80px);
+            margin-right: 200px;
+            margin-left: 100px;
+        }
+
+        .start-button,
+        .stop-button,
+        .anal-button {
+            padding: 10px 20px;
+            font-size: 30px;
+            cursor: pointer;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .start-button {
+            background-color: #4CAF50;
+        }
+
+        .stop-button {
+            background-color: #f44336;
+        }
+
+        .anal-button {
+            margin-left: 10px;
+            font-size: 30px;
+            cursor: pointer;
+            background-color: #0b1ae9;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .left-controls,
+        .right-controls {
+            display: flex;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .left-controls {
+            margin-right: auto;
+            margin-left: 70px;
+        }
+
+        .right-controls {
+            margin-left: auto;
+            margin-right: 50px;
+            align-items: flex-start;
+        }
+
+        #timer {
+            font-size: 50px;
+            color: white;
+            margin-left: 20px;
+            margin-right: 20px;
+            margin-top: 15px;
+        }
+
+        #loadingMessage {
+            display: none;
+            font-size: 24px;
+            color: white;
+            text-align: center;
+            margin-top: 20px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .dropdown {
+            font-size: 50px;
+            padding: 2px;
+            margin: 0 10px;
+            border-radius: 10px;
+            background-color: #555454;
+            color: #fff;
+        }
+
+        .label {
+            font-size: 50px;
+            color: white;
+            margin: 0 10px;
+            margin-top: 10px;
+        }
+
+        .reps {
+            width: 70px;
+            height: 60px;
+            font-size: 50px;
+            text-align: center;
+            margin: 0 5px;
+            border-radius: 10px;
+            background-color: #555454;
+            color: #fff;
+        }
+
+        .balance {
+            font-size: 40px;
+            text-align: center;
+        }
+        .sound-button {
+            position: absolute;
+            top: 200px;
+            left: 840px;
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            background-image: url('{{ url_for('static', filename='images/volume_mute.png') }}');
+            background-size: cover;
+            background-position: center;
+            z-index: 10; 
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="button-container">
+        <div class="controls">
+            <div class="left-controls">
+                <select id="sets" class="dropdown">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+                <label for="sets" class="label">세트</label>
+                <select id="weight" class="dropdown">
+                    <option value="20">20</option>
+                    <option value="40">40</option>
+                    <option value="60">60</option>
+                    <option value="80">80</option>
+                    <option value="100">100</option>
+                    <option value="120">120</option>
+                </select>
+                <label for="weight" class="label">kg</label>
+                <input type="number" id="reps" class="reps" value="0" readonly />
+                <label for="reps" class="label">회</label>
+            </div>
+            <h1 class="title">{{ exercise }}</h1> <!--운동 이름 변경-->
+            <div class="right-controls">
+                <div id="timer">00:00.000</div>
+                <button class="start-button" id="startButton">시작</button>
+                <button class="anal-button" id="analButton">분석하기</button>
+            </div>
+        </div>
+    </div>
+    <div id="container">
+        <video id="exerciseVideo" width="640" height="480" autoplay loop muted style="transform: scaleX(-1);"></video>
+        <button class="sound-button" onclick="soundcontrol()"></button>
+        <canvas id="canvas" width="640" height="480" style="transform: scaleX(-1);"></canvas>
+        <video id="webcamVideo" style="display: none;"></video>
+        <img id="left_body" src="{{ url_for('static', filename='left_body.png') }}" style="display: none; position: absolute; top: 10%; left: 5%;">
+        <img id="left_outbody" src="{{ url_for('static', filename='left_outbody.png') }}" style="display: none; position: absolute; top: 10%; left: 5%;">
+        <img id="right_body" src="{{ url_for('static', filename='right_body.png') }}" style="display: none; position: absolute; top: 10%; right: 5%;">
+        <img id="right_outbody" src="{{ url_for('static', filename='right_outbody.png') }}" style="display: none; position: absolute; top: 10%; right: 5%;">
+    </div>
+    <div id="console">
+        <div class="balance" id="balanceDisplay">Balance status will appear here.</div>
+        <div class="balance" id="kneeStatusDisplay">Knee status will appear here.</div>
+    </div>
+    <div id="loadingMessage">
+        <div class="spinner"></div>
+        데이터 분석 중...
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const exerciseVideoElement = document.getElementById('exerciseVideo');
+            exerciseVideoElement.src = "{{ url_for('static', filename='videos/3DexerciseVideo/' + video_file) }}";
+
+            const webcamVideoElement = document.getElementById('webcamVideo');
+            const canvasElement = document.getElementById('canvas');
+            const canvasCtx = canvasElement.getContext('2d');
+            const startButton = document.getElementById('startButton');
+            const analButton = document.getElementById('analButton');
+            const timerElement = document.getElementById('timer');
+            const loadingMessage = document.getElementById('loadingMessage');
+            let count = 0;
+            let isStarted = false;
+            let timerInterval;
+            let milliseconds = 0;
+            let leftImbalanceCount = 0;
+            let rightImbalanceCount = 0;
+            let left_knee_innerbody = 0;
+            let right_knee_innerbody = 0;
+
+            let leftKneeInnerBody = 0;
+            let rightKneeInnerBody = 0;
+
+            let imbalanceTimers = {
+                leftImbalance: null,
+                rightImbalance: null,
+                leftKneeInnerbody: null,        
+                rightKneeInnerbody: null,
+                
+            };
+
+            let logData = [];
+            let lastPosition = 'stand';
+            let bodyPartsDetectedStartTime = null; 
+            let bodyPartsNotDetectedStartTime = null; 
+
+            let leftInnerArrowVisible = false;
+            let rightInnerArrowVisible = false;
+
+            let mediaRecorder;
+            let recordedChunks = [];
+            let isDataSaving = false;  // 플래그 추가
+            let redirectToAnal = false; // 분석 페이지로 이동할지 여부
+            
+            const leftinnerArrow = new Image();
+
+            leftinnerArrow.src = "{{ url_for('static', filename='left_body.png') }}";
+            
+            const rightinnerArrow = new Image();
+            rightinnerArrow.src = "{{ url_for('static', filename='right_body.png') }}";
+            
+
+            const sound = new Audio("{{ url_for('static', filename='sounds/sound.mp3') }}");
+        
+            function startTimer() {
+                timerInterval = setInterval(() => {
+                    milliseconds += 10;
+                    const minutes = Math.floor(milliseconds / 60000);
+                    const seconds = Math.floor((milliseconds % 60000) / 1000);
+                    const displayMilliseconds = milliseconds % 1000;
+                    timerElement.textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${displayMilliseconds.toString().padStart(3, '0')}`;
+                }, 10);
+                if (webcamVideoElement.srcObject) {
+                    startRecording(webcamVideoElement.srcObject); // Start recording when the timer starts
+                }
+            }
+        
+            function stopTimer() {
+                clearInterval(timerInterval);
+            }
+        
+            function reset() {
+                stopTimer();
+                count = 0;
+                milliseconds = 0;
+                leftImbalanceCount = 0;
+                rightImbalanceCount = 0;
+                logData = [];
+                timerElement.textContent = '00:00.000';
+
+                
+                document.getElementById('balanceDisplay').textContent = 'Balance status will appear here.';
+                document.getElementById('kneeStatusDisplay').textContent = 'Knee status will appear here.';
+                loadingMessage.style.display = 'none';
+            }
+
+            async function saveData() {
+                if (isDataSaving) return;
+                isDataSaving = true;
+                const exerciseType = "{{ exercise }}";
+                const data = {
+                    count: count,
+                    set: document.getElementById('sets').value, 
+                    weight: document.getElementById('weight').value, 
+                    exercise_type: exerciseType,
+                    left_knee_innerbody: left_knee_innerbody,  
+                    right_knee_innerbody: right_knee_innerbody,  
+                    exercise_time: milliseconds, 
+                    logData: logData 
+                };
+                
+                const response = await fetch('/save_exercise_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+            
+                const result = await response.json();
+                isDataSaving = false; // 플래그 초기화
+                if (response.ok) {
+                    console.log('Data saved successfully:', result);
+                    if (redirectToAnal) {
+                        window.location.href = '/anal';
+                    }
+                    return true;
+                } else {
+                    console.error('Error saving data:', result.error);
+                    return false;
+                }
+            }
+            
+            function startRecording(stream) {
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'video/webm; codecs=vp9'
+                });
+
+                mediaRecorder.ondataavailable = function (event) {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async function () {
+                    const blob = new Blob(recordedChunks, {
+                        type: 'video/webm'
+                    });
+                    const formData = new FormData();
+                    formData.append('video', blob, 'exercise_recording.webm');
+                    formData.append('set', document.getElementById('sets').value);  // Add set number
+
+                    try {
+                        const response = await fetch('/upload_video', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            console.log('Video uploaded successfully');
+                        } else {
+                            console.error('Video upload failed');
+                        }
+                    } catch (error) {
+                        console.error('Error uploading video:', error);
+                    }
+                };
+
+                mediaRecorder.start();
+            }
+
+            function stopRecording() {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+            }
+        
+            async function setupCamera() {
+                if (navigator.mediaDevices.getUserMedia) {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    webcamVideoElement.srcObject = stream;
+                    startRecording(stream);
+                    await new Promise((resolve) => {
+                        webcamVideoElement.onloadedmetadata = () => {
+                            resolve();
+                        };
+                    });
+                }
+            }
+
+            function drawArrow(image, x, y) {
+                canvasCtx.drawImage(image, x - 25, y - 130, 50, 50); //화살표 위치수정
+            }
+        
+            async function loadAndPredict() {
+                const pose = new Pose({
+                    locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+                });
+        
+                pose.setOptions({
+                    modelComplexity: 1,
+                    smoothLandmarks: true,
+                    enableSegmentation: true,
+                    smoothSegmentation: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+        
+                pose.onResults(onResults);
+        
+                await setupCamera();
+                webcamVideoElement.play();
+        
+                function calculateDistance(p1, p2) {
+                    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+                }
+        
+                function calculateAngle(A, B, C) {
+                    let AB = Math.sqrt(Math.pow(B.x - A.x, 2) + Math.pow(B.y - A.y, 2));    
+                    let BC = Math.sqrt(Math.pow(B.x - C.x, 2) + Math.pow(B.y - C.y, 2)); 
+                    let AC = Math.sqrt(Math.pow(C.x - A.x, 2) + Math.pow(C.y - A.y, 2));
+                    return Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB));
+                }
+        
+                function onResults(results) {
+                    canvasCtx.save();
+                    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                    canvasCtx.drawImage(webcamVideoElement, 0, 0, canvasElement.width, canvasElement.height);
+        
+                    if (results.poseLandmarks) {
+                        drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#FFFFFF', lineWidth: 3.5 });
+                        drawLandmarks(canvasCtx, results.poseLandmarks, { color: '#189AD3', radius: 1.5 });
+        
+                        const leftHip = results.poseLandmarks[POSE_LANDMARKS.LEFT_HIP];
+                        const leftKnee = results.poseLandmarks[POSE_LANDMARKS.LEFT_KNEE];
+                        const leftAnkle = results.poseLandmarks[POSE_LANDMARKS.LEFT_ANKLE];
+                        const rightHip = results.poseLandmarks[POSE_LANDMARKS.RIGHT_HIP];
+                        const rightKnee = results.poseLandmarks[POSE_LANDMARKS.RIGHT_KNEE];
+                        const rightAnkle = results.poseLandmarks[POSE_LANDMARKS.RIGHT_ANKLE];
+        
+                        const bodyPartsVisible = leftHip && leftKnee && leftAnkle && rightHip && rightKnee && rightAnkle;
+        
+                        if (isStarted) {
+                            const angleLeft = calculateAngle(leftHip, leftKnee, leftAnkle) * (180 / Math.PI);
+                            const angleRight = calculateAngle(rightHip, rightKnee, rightAnkle) * (180 / Math.PI);
+                        
+                            const imbalanceThreshold = 10;
+                        
+                            if (angleLeft > 160 && angleRight > 160) {
+                                lastPosition = 'stand';
+                            } else if (angleLeft < 90 && angleRight < 90 && lastPosition === 'stand') {
+                                lastPosition = 'sit';
+                                count++;
+                                sound.play();  
+                        
+                                document.getElementById('reps').value = count;
+                        
+                                const angleDiff = angleLeft - angleRight;
+                                const balanceDisplay = document.getElementById('balanceDisplay');
+                                if (angleDiff > imbalanceThreshold) {
+                                    balanceDisplay.textContent = 'Imbalance detected: Close your right knee more.';
+                                    left_knee_innerbody += 1; // 왼쪽 불균형이 발생할 때마다 증가
+                                } else if (angleDiff < -imbalanceThreshold) {
+                                    balanceDisplay.textContent = 'Imbalance detected: Close your left knee more.';
+                                    right_knee_innerbody += 1; // 오른쪽 불균형이 발생할 때마다 증가
+                                } else {
+                                    balanceDisplay.textContent = 'Balance is good.';
+                                }
+                                
+                            }
+                            
+                            const leftKneeInnerBody = calculateDistance(leftHip, leftKnee);
+                            const rightKneeInnerBody = calculateDistance(rightHip, rightKnee);
+                            const imbalance = Math.abs(leftKneeInnerBody - rightKneeInnerBody);
+                        
+                            logData.push({
+                                time: milliseconds,
+                                leftDistance: leftKneeInnerBody,  
+                                rightDistance: rightKneeInnerBody, 
+                                imbalance: imbalance.toFixed(2)
+                            });
+                        }
+
+                    }
+    
+                    
+                    canvasCtx.restore();
+                }
+        
+                setInterval(() => {
+                    pose.send({image: webcamVideoElement});
+                }, 100);
+            }
+        
+            startButton.addEventListener('click', () => {
+                if (!isStarted) {
+                    bodyPartsDetectedStartTime = null;  // 초기화
+                    bodyPartsNotDetectedStartTime = null;  // 초기화
+                    loadAndPredict();
+                    startTimer(); // 타이머 시작
+                    isStarted = true;
+                    startButton.textContent = '그만';
+                    startButton.className = 'stop-button';
+                } else {
+                    stopTimer();
+                    stopRecording();
+                    isStarted = false;
+                    saveData();
+                    startButton.textContent = '시작';
+                    startButton.className = 'start-button';
+                    reset();
+                }
+            });
+        
+            analButton.addEventListener('click', async () => {
+                loadingMessage.style.display = 'block';
+                redirectToAnal = true; // 분석 페이지로 이동 설정
+                if (!isDataSaving) { // 데이터가 이미 저장 중인지 확인
+                    const dataSaved = await saveData();
+                    if (dataSaved) {
+                        window.location.href = '/anal';
+                    } else {
+                        loadingMessage.style.display = 'none';
+                        alert('데이터 저장에 실패했습니다.');
+                    }
+                }
+            });
+        });
+        function soundcontrol() {
+            const video = document.getElementById('exerciseVideo');
+            const button = document.querySelector('.sound-button');
+            video.muted = !video.muted;
+            if (video.muted) {
+                button.style.backgroundImage = "url('{{ url_for('static', filename='images/volume_mute.png') }}')";
+            } else {
+                button.style.backgroundImage = "url('{{ url_for('static', filename='images/volume.png') }}')";
+            }
+        }
+        </script>
+        
+    <div class="sidebar">
+        <div>
+            <a href="{{ url_for('rank') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/rank.png') }}" alt="순위 아이콘" style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+        <div>
+            <a href="{{ url_for('anal') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/anal.png') }}" alt="분석 아이콘" style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+        <div>
+            <a href="{{ url_for('select') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/exer_s.png') }}" alt="운동 아이콘" style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

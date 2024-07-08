@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GymPT</title>
+<style>
+  body, html {
+    height: 100%;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo {
+    margin-right: 50px;
+  }
+  .login-box {
+    background-color: #1f1f1f;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: left;
+  }
+  .login-box h1 {
+    color: #ffffff;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+  }
+  .login-box .input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .login-box .input-group label {
+    color: #ffffff; /* 텍스트 색상 흰색으로 변경 */
+    font-size: 1.2em;
+    font-weight:bold;
+    margin-right: 10px;
+    width: 80px;
+  }
+  .login-box input[type="text"],
+  .login-box input[type="password"],
+  .login-box input[type="submit"],
+  .login-box .signup-button {
+    width: calc(100% - 90px); /* 입력란 크기 조정 */
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+  }
+  .login-box input[type="text"],
+  .login-box input[type="password"] {
+    background-color: #fff;
+    color: #333;
+  }
+  .login-box .button-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .login-box input[type="submit"] {
+    background-color: #ff5722;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%; /* 버튼 너비 100%로 설정 */
+    margin-bottom: 10px; /* 로그인 버튼과 회원가입 버튼 사이에 간격 추가 */
+  }
+  .login-box .signup-button {
+    background-color: #444;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+    margin-top: 10px; /* 회원가입 버튼의 위치 조정 */
+    width: 100%; /* 버튼 너비 100%로 설정 */
+    padding: 10px; /* 회원가입 버튼의 패딩 설정 */
+  }
+  .flash-message {
+    color: red;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="logo">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="GymPT Logo">
+  </div>
+  <div class="login-box">
+    <form action="{{ url_for('login') }}" method="post" id="login">
+      <div class="input-group">
+        <label for="name">이름</label>
+        <input type="text" id="name" name="name" placeholder="이름" required>
+      </div>
+      <div class="input-group">
+        <label for="phone">휴대전화</label>
+        <input type="text" id="phone" name="phone" placeholder="휴대전화" required>
+      </div>
+      <div class="button-container">
+        <input type="submit" value="로그인" class="login">
+        <a href="{{ url_for('signup') }}" class="signup-button">회원가입</a>
+      </div>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <script>
+          alert("{{ messages[0] }}");
+        </script>
+      {% endif %}
+    {% endwith %}
+  </div>
+</div>
+
+</body>
+</html>

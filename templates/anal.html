@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ name }}님의 운동 분석 결과</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Pretendard-Black';
+            src: url("{{ url_for('static', filename='fonts/Pretendard-Black.otf') }}") format('opentype');
+            font-weight: 900;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Pretendard-SemiBold';
+            src: url("{{ url_for('static', filename='fonts/Pretendard-SemiBold.otf') }}") format('opentype');
+            font-weight: 600;
+            font-style: normal;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            overflow: auto;
+
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 6fr 5fr 13fr;
+            grid-template-rows: 2fr 1fr 6fr 6fr;
+            gap: 10px;
+            width: 80%;
+            height: 100vh;
+            background-color: #000;
+            padding: 20px;
+            padding-right: 100px;
+            box-sizing: border-box;
+            overflow: visible;
+        }
+        .container > div {
+            padding: 10px;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .item1 {
+            grid-column: 1 / 3;
+            grid-row: 1 / 2;
+        }
+        .item1 .left {
+            padding-right: 20px;
+            font-size: 36px;
+            font-weight: bold;
+            font-family:'Pretendard-Black';
+
+        }
+        .item1 .right {
+            font-size: 30px;
+            font-weight: bold;
+            border-radius: 30px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .item2 {
+            grid-column: 3 / 4;
+            grid-row: 1 / 3;
+        }
+        .item2 .left-image,
+        .item2 .right-image {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .item2 .left-image img,
+        .item2 .right-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        .item2 .text-content {
+            flex: 2;
+            text-align: left;
+            font-weight: normal;
+            padding-left: 10px;
+            color: #cccccc;
+        }
+        .item2 .text-content p {
+            margin: 5px 3px;
+            font-size: 24px;
+            transform: skew(-10deg);
+        }
+        .item3 {
+            background-color: #000;
+            grid-column: 1 / 3;
+            grid-row: 2 / 4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .arrow {
+            cursor: pointer;
+            color: #fff;
+            font-size: 40px;
+            padding: 0 20px;
+            user-select: none;
+            position: absolute;
+            top: 55%;
+            transform: translateY(-50%);
+        }
+        .arrow.left {
+            left: 10px;
+        }
+        .arrow.right {
+            right: 10px;
+        }
+        .video-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .buttons {
+            display: flex;
+            justify-content: left;
+            width: 100%;
+            margin-bottom: 0px;
+            padding-left: 50px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .buttons::-webkit-scrollbar {
+            display: none;
+        }
+        .buttons .button {
+            background-color: #888888;
+            width: 80px;
+            height: 40px;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 1px;
+            flex-shrink: 0;
+        }
+        .buttons .button:hover {
+            background-color: #EA4228;
+        }
+        .buttons .button p {
+            color: #444;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            padding-right: 3px;
+            padding-top: 7px;
+        }
+        .buttons .button.active {
+            background-color: #EA4228;
+        }
+        .buttons .button.active p {
+            color: #ffffff;
+        }
+        .video-container {
+            background-color: #1f2024;
+            width: 100%;
+            height: 100%;
+            max-width: 800px;
+            max-height: 450px;
+            display: flex;
+            border-radius: 20px;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #1f2024;
+            padding-top: 30px;
+            padding-bottom: 30px;
+        }
+        .video-container video {
+            max-height: 300px;
+        }
+        .item4 {
+            background-color: #1f2024;
+            grid-column: 3 / 4;
+            grid-row: 3 / 4; /*변경함*/
+            border-radius: 20px;
+        }
+        .graph-container {
+            width: 90%;
+            height: 80%;
+        }
+        .item5 {
+            background-color: #1f2024;
+            grid-column: 2 / 4; 
+            grid-row: 4 / 5; 
+            border-radius: 20px;
+            margin-top: 0px;
+            /* overflow-y: scroll; */
+            padding: 20px;
+            padding-top: 40px;
+            box-sizing: content-box;
+            word-break: break-all;
+            font-family : Pretendard-SemiBold;
+            position: relative; /* 추가 */
+
+        }
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup-content {
+            background-color: #1f2024;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 80%;
+            max-height: 80%;
+            overflow-y: auto;
+            color: #fff;
+        }
+
+        .popup-close {
+            background-color: #EA4228;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        
+        .show-more {
+            color: #EA4228;
+            cursor: pointer;
+            font-size: 18px;
+            text-align: center;
+            position: absolute; /* 추가 */
+            bottom: 20px; /* 추가 */
+            left: 50%; /* 추가 */
+            transform: translateX(-50%); /* 추가 */
+        }
+        .item6 {
+            background-color: #1f2024;
+            grid-column: 1 / 2; 
+            grid-row: 4 / 5; 
+            border-radius: 20px;
+            margin-top: 0px;
+        }
+        .graph {
+            width: 100%;
+            height: 100%;
+        }
+        .sidebar {
+            width: 80px;
+            background-color: #222;
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="item1">
+            <div class="left">{{ name }}님의 결과 리포트</div>
+            <div class="right">{{ kst_date.strftime('%Y.%m.%d') }}</div>
+        </div>
+        <div class="item2">
+            <div class="left-image">
+                <img src="{{ url_for('static', filename=exercise_image) }}" alt="Exercise Image" />
+            </div>
+            <div class="text-content">
+                <p>Time : {{ '%.1f' | format(exercise_time / 1000) }}s</p>
+                <p>Reps : {{ latest_exercise_data.count }}</p>
+                <p>Volume : {{ weight }} kg</p>
+                <p>운동 종류 : {{ latest_exercise_data.exercise_type }}</p>
+            </div>
+            <!-- <div class="right-image">
+                <a href="{{ url_for('generate_qr') }}" download="website_qr.png">
+                    <img src="{{ url_for('generate_qr') }}" alt="QR Code" />
+                </a>
+            </div> -->
+        </div>
+        <div class="item3">
+            <div class="arrow left" onclick="navigateVideo(-1)">&#10094;</div>
+            <div class="video-wrapper">
+                <div class="buttons">
+                    {% for video in video_files %}
+                    <div class="button" onclick="showVideo('video{{ loop.index }}', this)">
+                        <p>{{ loop.index }}set</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="video-container" id="video-container">
+                    {% for video in video_files %}
+                    <video id="video{{ loop.index }}" src="{{ url_for('static', filename='videos/' ~ session['user_id'] ~ '/' ~ video) }}" controls style="display:none;"></video>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="arrow right" onclick="navigateVideo(1)">&#10095;</div>
+        </div>
+        <div class="item4">
+            <div class="graph-container" id="graph-container">
+                <div class="graph" id="graph"></div>
+            </div>
+        </div>
+        <div class="item5">
+            <div class="short-diagnosis">{{ short_diagnosis|safe }}</div>
+            <div class="show-more" onclick="togglePopup()">자세히 보기</div> <!-- 수정 -->
+        </div>
+        
+        <div class="popup-overlay" id="popup">
+            <div class="popup-content">
+                <div class="detailed-diagnosis">{{ diagnosis|safe }}</div> <!-- 수정 -->
+                <button class="popup-close" onclick="togglePopup()">닫기</button>
+            </div>
+        </div>
+        <div class="item6">
+            <img src="{{ url_for('static', filename='images/profile_taeto.png') }}" alt="프로필 사진" style="max-width: 80%; max-height: 80%; border-radius: 50%;">
+        </div>
+    </div>
+    <div class="sidebar">
+        <div>
+            <a href="{{ url_for('rank') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/rank.png') }}" alt="순위 아이콘" style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+        <div>
+            <a href="{{ url_for('anal') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/anal_s.png') }}" alt="분석 아이콘" style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+        <div>
+            <a href="{{ url_for('select') }}" style="text-decoration: none; color: white;">
+                <div class="icon">
+                    <img src="{{ url_for('static', filename='images/exer.png') }}" alt="운동 아이콘" style="width: 100%; height: auto;">
+                </div>
+            </a>
+        </div>
+    </div>
+    <script>
+        var graphs = {{ graphJSON | safe }};
+        Plotly.newPlot('graph', graphs, {}, { displayModeBar: false });
+    
+        let currentVideoIndex = 0;
+        const videoIds = [{% for video in video_files %}'video{{ loop.index }}',{% endfor %}];
+    
+        document.addEventListener('DOMContentLoaded', function() {
+            const popup = document.getElementById('popup');
+            popup.style.display = 'none'; // 페이지 로드 시 팝업창을 숨긴 상태로 설정
+            showVideo(videoIds[0], document.querySelector(`.button[onclick="showVideo('${videoIds[0]}', this)"]`));
+        });
+    
+        function showVideo(videoId, button) {
+            var videos = document.querySelectorAll('.video-container video');
+            videos.forEach(function(video) {
+                video.style.display = 'none';
+            });
+    
+            var selectedVideo = document.getElementById(videoId);
+            selectedVideo.style.display = 'block';
+    
+            var buttons = document.querySelectorAll('.buttons .button');
+            buttons.forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+    
+            button.classList.add('active');
+    
+            currentVideoIndex = videoIds.indexOf(videoId);
+        }
+    
+        function navigateVideo(direction) {
+            currentVideoIndex += direction;
+    
+            if (currentVideoIndex < 0) {
+                currentVideoIndex = videoIds.length - 1;
+            } else if (currentVideoIndex >= videoIds.length) {
+                currentVideoIndex = 0;
+            }
+    
+            const newVideoId = videoIds[currentVideoIndex];
+            const newButton = document.querySelector(`.button[onclick="showVideo('${newVideoId}', this)"]`);
+            showVideo(newVideoId, newButton);
+        }
+
+        // Add touch event listeners for the buttons container
+        const buttonsContainer = document.querySelector('.buttons');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        buttonsContainer.addEventListener('mousedown', (e) => {
+            isDown = true;
+            buttonsContainer.classList.add('active');
+            startX = e.pageX - buttonsContainer.offsetLeft;
+            scrollLeft = buttonsContainer.scrollLeft;
+        });
+
+        buttonsContainer.addEventListener('mouseleave', () => {
+            isDown = false;
+            buttonsContainer.classList.remove('active');
+        });
+
+        buttonsContainer.addEventListener('mouseup', () => {
+            isDown = false;
+            buttonsContainer.classList.remove('active');
+        });
+
+        buttonsContainer.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - buttonsContainer.offsetLeft;
+            const walk = (x - startX) * 3; //scroll-fast
+            buttonsContainer.scrollLeft = scrollLeft - walk;
+        });
+
+        buttonsContainer.addEventListener('touchstart', (e) => {
+            isDown = true;
+            startX = e.touches[0].pageX - buttonsContainer.offsetLeft;
+            scrollLeft = buttonsContainer.scrollLeft;
+        });
+
+        buttonsContainer.addEventListener('touchend', () => {
+            isDown = false;
+        });
+
+        buttonsContainer.addEventListener('touchmove', (e) => {
+            if (!isDown) return;
+            const x = e.touches[0].pageX - buttonsContainer.offsetLeft;
+            const walk = (x - startX) * 3; //scroll-fast
+            buttonsContainer.scrollLeft = scrollLeft - walk;
+        });
+
+    function togglePopup() {
+        const popup = document.getElementById('popup');
+        popup.style.display = popup.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+
+    </script>
+
+</body>
+</html>
